@@ -16,11 +16,11 @@ import (
 )
 
 type (
-	// Reflector extracts the Temporal namespace from a request. Namespace
-	// receives the full method and the raw bytes of the first request message
-	// and returns the namespace, or "" when it cannot determine one.
+	// Reflector reads what a request is addressing. Target receives the full
+	// method and the raw bytes of the first request message and returns the
+	// Target for them, with every field it cannot determine left empty.
 	Reflector interface {
-		Namespace(string, []byte) string
+		Target(string, []byte) meta.Target
 	}
 
 	// replayStream overrides Context so a handler sees the [meta.Target] the
@@ -76,7 +76,7 @@ func PeekInterceptor(r Reflector, a services.Allowlist) grpc.StreamServerInterce
 
 		replay := &replayStream{ServerStream: ss}
 		if !eof {
-			target.Namespace = r.Namespace(info.FullMethod, first.payload)
+			target = r.Target(info.FullMethod, first.payload)
 			replay.first = first
 		}
 

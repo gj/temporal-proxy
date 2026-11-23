@@ -154,12 +154,16 @@ func TestAuthSendsTarget(t *testing.T) {
 	target := meta.Target{
 		FullName:  "/temporal.api.workflowservice.v1.WorkflowService/StartWorkflowExecution",
 		Namespace: "orders",
+		WorkflowService: &authv1.WorkflowServiceTarget{
+			Kind: &authv1.WorkflowServiceTarget_TaskQueue{TaskQueue: "orders-tq"},
+		},
 	}
 	require.NoError(t, a.Authenticate(t.Context(), target, metadata.MD{}))
 
 	got := conn.sentTarget(t)
 	require.Equal(t, target.FullName, got.GetFullName())
 	require.Equal(t, target.Namespace, got.GetNamespace())
+	require.Equal(t, "orders-tq", got.GetWorkflowService().GetTaskQueue())
 	require.Nil(t, got.GetHttp(), "a gRPC call carries no HTTP target")
 }
 

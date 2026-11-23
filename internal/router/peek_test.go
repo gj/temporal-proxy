@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.temporal.io/proxy/internal/transport/meta"
+	authv1 "go.temporal.io/proxy/pkg/api/auth/v1"
 )
 
 type (
@@ -38,10 +39,11 @@ type (
 	// peekReflector records what it was asked to reflect and returns a fixed
 	// namespace. The interceptor calls it inline, so no locking is needed.
 	peekReflector struct {
-		ns      string
-		calls   int
-		method  string
-		payload []byte
+		ns              string
+		workflowService *authv1.WorkflowServiceTarget
+		calls           int
+		method          string
+		payload         []byte
 	}
 
 	// allowlistFunc adapts a predicate to services.Allowlist.
@@ -54,7 +56,10 @@ func TestPeekInterceptorAttachesTargetAndReplaysFirstFrame(t *testing.T) {
 	first, err := proto.Marshal(&grpc_health_v1.HealthCheckRequest{Service: "abc"})
 	require.NoError(t, err)
 
-	reflector := &peekReflector{ns: "orders"}
+	workflowService := &authv1.WorkflowServiceTarget{
+		Kind: &authv1.WorkflowServiceTarget_TaskQueue{TaskQueue: "orders-tq"},
+	}
+	reflector := &peekReflector{ns: "orders", workflowService: workflowService}
 	ss := &fakeStream{ctx: t.Context(), recv: []recvStep{{payload: first}}}
 
 	var (
@@ -79,9 +84,12 @@ func TestPeekInterceptorAttachesTargetAndReplaysFirstFrame(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// The Target names the method the stream carried and the namespace the
-	// Reflector read out of its first message.
-	require.Equal(t, meta.Target{FullName: "/test.v1.Echo/Ping", Namespace: "orders"}, gotTarget)
+	// The Target is what the Reflector read out of the first message.
+	require.Equal(t, meta.Target{
+		FullName:        "/test.v1.Echo/Ping",
+		Namespace:       "orders",
+		WorkflowService: workflowService,
+	}, gotTarget)
 
 	// The frame the interceptor consumed is handed back to the handler verbatim.
 	require.NoError(t, gotErr)
@@ -293,12 +301,12 @@ func (s *fakeStream) RecvMsg(m any) error {
 	return nil
 }
 
-func (r *peekReflector) Namespace(method string, payload []byte) string {
+func (r *peekReflector) Target(method string, payload []byte) meta.Target {
 	r.calls++
 	r.method = method
 	r.payload = payload
 
-	return r.ns
+	return meta.Target{FullName: method, Namespace: r.ns, WorkflowService: r.workflowService}
 }
 
 func (f allowlistFunc) Allows(service string) bool { return f(service) }

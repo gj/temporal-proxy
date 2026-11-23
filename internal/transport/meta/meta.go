@@ -9,6 +9,8 @@ import (
 	"fmt"
 
 	"google.golang.org/grpc/metadata"
+
+	authv1 "go.temporal.io/proxy/pkg/api/auth/v1"
 )
 
 const (
@@ -50,10 +52,12 @@ type (
 	// FullName empty. Namespace is "" when the request names none, when its
 	// payload could not be read, or when the gateway does not forward the
 	// method's service and so never read one.
+	// WorkflowService is set only for a call to WorkflowService.
 	Target struct {
-		FullName  string
-		Namespace string
-		HTTP      *HTTPTarget
+		FullName        string
+		Namespace       string
+		WorkflowService *authv1.WorkflowServiceTarget
+		HTTP            *HTTPTarget
 	}
 
 	// targetKey keys a Target on a context. It is an unexported type so no other

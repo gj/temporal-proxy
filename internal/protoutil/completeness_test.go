@@ -82,3 +82,5 @@ func suspiciousButUnclassified(md protoreflect.MessageDescriptor, fd protoreflec
 
 	return name == "name" && strings.Contains(strings.ToLower(string(md.Name())), "namespace")
 }
+
+// TODO(gj): authorization target completeness test?

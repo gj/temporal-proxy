@@ -4,8 +4,16 @@ import (
 	"strings"
 	"sync"
 
+	commonpb "go.temporal.io/api/common/v1"
+	enumspb "go.temporal.io/api/enums/v1"
+	schedulepb "go.temporal.io/api/schedule/v1"
+	taskqueuepb "go.temporal.io/api/taskqueue/v1"
+	"go.temporal.io/api/workflowservice/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"go.temporal.io/proxy/internal/transport/meta"
+	authv1 "go.temporal.io/proxy/pkg/api/auth/v1"
 )
 
 type (
@@ -39,7 +47,17 @@ type (
 	namespacer interface {
 		GetNamespace() string
 	}
+
+	// Implemented by a start request, a signal-with-start request, and the
+	// workflow a schedule's action starts.
+	workflowStarter interface {
+		GetWorkflowId() string
+		GetWorkflowType() *commonpb.WorkflowType
+		GetTaskQueue() *taskqueuepb.TaskQueue
+	}
 )
+
+const workflowServicePrefix = "/temporal.api.workflowservice.v1.WorkflowService/"
 
 // NewExtractor returns an Extractor that resolves request types using files and
 // types. Production callers pass protoregistry.GlobalFiles and
@@ -58,22 +76,118 @@ func NewExtractor(files Files, types Types) *Extractor {
 // or the empty string when the method is unknown, the request type carries no
 // namespace, or the payload cannot be decoded.
 func (e *Extractor) Namespace(fullMethod string, payload []byte) string {
+	return e.Target(fullMethod, payload).Namespace
+}
+
+// Target returns what an encoded request for fullMethod is addressing. Only
+// FullName is set when the method is unknown or the payload cannot be decoded.
+func (e *Extractor) Target(fullMethod string, payload []byte) meta.Target {
+	target := meta.Target{FullName: fullMethod}
+
 	mt := e.messageType(fullMethod)
 	if mt == nil {
-		return ""
+		return target
 	}
 
 	msg := mt.New().Interface()
 	if err := proto.Unmarshal(payload, msg); err != nil {
-		return ""
+		return target
 	}
 
-	ns, ok := msg.(namespacer)
-	if !ok {
-		return ""
+	if m, ok := msg.(namespacer); ok {
+		target.Namespace = m.GetNamespace()
+	}
+	if strings.HasPrefix(fullMethod, workflowServicePrefix) {
+		target.WorkflowService = workflowServiceTarget(msg)
 	}
 
-	return ns.GetNamespace()
+	return target
+}
+
+func workflowServiceTarget(msg proto.Message) *authv1.WorkflowServiceTarget {
+	switch m := msg.(type) {
+	case *workflowservice.ExecuteMultiOperationRequest:
+		var ops []*authv1.WorkflowOperation
+		for _, op := range m.GetOperations() {
+			if start := op.GetStartWorkflow(); start != nil {
+				ops = append(ops, startOperation(start))
+			}
+			if update := op.GetUpdateWorkflow(); update != nil {
+				ops = append(ops, &authv1.WorkflowOperation{WorkflowId: update.GetWorkflowExecution().GetWorkflowId()})
+			}
+		}
+
+		return workflowsTarget(ops...)
+
+	case *workflowservice.StartBatchOperationRequest:
+		if query := m.GetVisibilityQuery(); query != "" {
+			return &authv1.WorkflowServiceTarget{Kind: &authv1.WorkflowServiceTarget_VisibilityQuery{VisibilityQuery: query}}
+		}
+
+		var ops []*authv1.WorkflowOperation
+		for _, e := range m.GetExecutions() { //nolint:staticcheck // deprecated, still accepted
+			ops = append(ops, &authv1.WorkflowOperation{WorkflowId: e.GetWorkflowId()})
+		}
+		for _, e := range m.GetTargetExecutions() {
+			// A partial list would read as the full one.
+			if e.GetType() != enumspb.EXECUTION_TYPE_WORKFLOW {
+				return &authv1.WorkflowServiceTarget{}
+			}
+			ops = append(ops, &authv1.WorkflowOperation{WorkflowId: e.GetBusinessId()})
+		}
+
+		return workflowsTarget(ops...)
+
+	case interface{ GetScheduleId() string }:
+		schedule := &authv1.ScheduleOperation{ScheduleId: m.GetScheduleId()}
+		if s, ok := msg.(interface{ GetSchedule() *schedulepb.Schedule }); ok {
+			if start := s.GetSchedule().GetAction().GetStartWorkflow(); start != nil {
+				schedule.Action = startOperation(start)
+			}
+		}
+
+		return &authv1.WorkflowServiceTarget{Kind: &authv1.WorkflowServiceTarget_Schedule{Schedule: schedule}}
+
+	case workflowStarter:
+		return workflowsTarget(startOperation(m))
+
+	// A request on an existing workflow has the workflow ID in one of three
+	// fields.
+	case interface{ GetWorkflowId() string }:
+		return workflowsTarget(&authv1.WorkflowOperation{WorkflowId: m.GetWorkflowId()})
+	case interface {
+		GetWorkflowExecution() *commonpb.WorkflowExecution
+	}:
+		return workflowsTarget(&authv1.WorkflowOperation{WorkflowId: m.GetWorkflowExecution().GetWorkflowId()})
+	case interface {
+		GetExecution() *commonpb.WorkflowExecution
+	}:
+		return workflowsTarget(&authv1.WorkflowOperation{WorkflowId: m.GetExecution().GetWorkflowId()})
+
+	// A request about a task queue has it as a message or as a plain string.
+	case interface{ GetTaskQueue() *taskqueuepb.TaskQueue }:
+		return &authv1.WorkflowServiceTarget{Kind: &authv1.WorkflowServiceTarget_TaskQueue{TaskQueue: m.GetTaskQueue().GetName()}}
+	case interface{ GetTaskQueue() string }:
+		return &authv1.WorkflowServiceTarget{Kind: &authv1.WorkflowServiceTarget_TaskQueue{TaskQueue: m.GetTaskQueue()}}
+	}
+
+	return &authv1.WorkflowServiceTarget{}
+}
+
+func workflowsTarget(ops ...*authv1.WorkflowOperation) *authv1.WorkflowServiceTarget {
+	return &authv1.WorkflowServiceTarget{
+		Kind: &authv1.WorkflowServiceTarget_Workflows{Workflows: &authv1.WorkflowOperations{Operations: ops}},
+	}
+}
+
+func startOperation(s workflowStarter) *authv1.WorkflowOperation {
+	return &authv1.WorkflowOperation{
+		WorkflowId: s.GetWorkflowId(),
+		Start: &authv1.WorkflowStart{
+			WorkflowType: s.GetWorkflowType().GetName(),
+			TaskQueue:    s.GetTaskQueue().GetName(),
+		},
+	}
 }
 
 // messageType returns the request message type for fullMethod, or nil when it

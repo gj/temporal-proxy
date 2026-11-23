@@ -27,6 +27,44 @@ message Target {
   // http describes an HTTP request to one of the proxy's route groups. It is set
   // exactly when full_name is empty.
   HTTPTarget http = 3;
+  // Set only for a call to WorkflowService.
+  WorkflowServiceTarget workflow_service = 4;
+}
+
+message WorkflowServiceTarget {
+  oneof kind {
+    WorkflowOperations workflows = 1;
+    ScheduleOperation schedule = 2;
+    // The task queue the request polls, describes or configures.
+    string task_queue = 3;
+    // Set for a batch that selects its workflows by a query.
+    string visibility_query = 4;
+  }
+}
+
+// A multi-operation has one operation per nested request. A batch over listed
+// workflows has one per workflow.
+message WorkflowOperations {
+  repeated WorkflowOperation operations = 1;
+}
+
+message WorkflowOperation {
+  string workflow_id = 1;
+  // Set when the operation can start the workflow. Such an operation can also
+  // signal, terminate or attach to a workflow that already runs under the ID.
+  WorkflowStart start = 2;
+}
+
+message WorkflowStart {
+  string workflow_type = 1;
+  string task_queue = 2;
+}
+
+message ScheduleOperation {
+  string schedule_id = 1;
+  // The operation the schedule does each time it fires. Set when the request
+  // creates or updates the schedule.
+  WorkflowOperation action = 2;
 }
 
 // HTTPTarget is an HTTP request to one of the proxy's route groups, as the proxy
