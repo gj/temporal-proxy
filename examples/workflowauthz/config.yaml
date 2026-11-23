@@ -1,0 +1,21 @@
+# The proxy runs from the repository root.
+hostPort: 127.0.0.1:7234 # the dev server holds 7233
+
+routing:
+  default: local
+
+upstreams:
+  - name: local
+    hostPort: 127.0.0.1:7233 # temporal server start-dev
+    insecure: true
+
+extensionServers:
+  - name: authz
+    hostPort: 127.0.0.1:9444
+    insecure: true
+
+auth:
+  external:
+    name: authz
+    credentialHeaders:
+      - authorization

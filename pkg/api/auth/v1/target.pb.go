@@ -75,7 +75,7 @@ func (x HTTPTarget_Group) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use HTTPTarget_Group.Descriptor instead.
 func (HTTPTarget_Group) EnumDescriptor() ([]byte, []int) {
-	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{1, 0}
+	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{6, 0}
 }
 
 // Target is what a call is addressing, as the proxy resolved it. For a gRPC call
@@ -101,9 +101,11 @@ type Target struct {
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// http describes an HTTP request to one of the proxy's route groups. It is set
 	// exactly when full_name is empty.
-	Http          *HTTPTarget `protobuf:"bytes,3,opt,name=http,proto3" json:"http,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Http *HTTPTarget `protobuf:"bytes,3,opt,name=http,proto3" json:"http,omitempty"`
+	// Set only for a call to WorkflowService.
+	WorkflowService *WorkflowServiceTarget `protobuf:"bytes,4,opt,name=workflow_service,json=workflowService,proto3" json:"workflow_service,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Target) Reset() {
@@ -157,6 +159,335 @@ func (x *Target) GetHttp() *HTTPTarget {
 	return nil
 }
 
+func (x *Target) GetWorkflowService() *WorkflowServiceTarget {
+	if x != nil {
+		return x.WorkflowService
+	}
+	return nil
+}
+
+type WorkflowServiceTarget struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Kind:
+	//
+	//	*WorkflowServiceTarget_Workflows
+	//	*WorkflowServiceTarget_Schedule
+	//	*WorkflowServiceTarget_TaskQueue
+	//	*WorkflowServiceTarget_VisibilityQuery
+	Kind          isWorkflowServiceTarget_Kind `protobuf_oneof:"kind"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WorkflowServiceTarget) Reset() {
+	*x = WorkflowServiceTarget{}
+	mi := &file_api_auth_v1_target_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkflowServiceTarget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkflowServiceTarget) ProtoMessage() {}
+
+func (x *WorkflowServiceTarget) ProtoReflect() protoreflect.Message {
+	mi := &file_api_auth_v1_target_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkflowServiceTarget.ProtoReflect.Descriptor instead.
+func (*WorkflowServiceTarget) Descriptor() ([]byte, []int) {
+	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *WorkflowServiceTarget) GetKind() isWorkflowServiceTarget_Kind {
+	if x != nil {
+		return x.Kind
+	}
+	return nil
+}
+
+func (x *WorkflowServiceTarget) GetWorkflows() *WorkflowOperations {
+	if x != nil {
+		if x, ok := x.Kind.(*WorkflowServiceTarget_Workflows); ok {
+			return x.Workflows
+		}
+	}
+	return nil
+}
+
+func (x *WorkflowServiceTarget) GetSchedule() *ScheduleOperation {
+	if x != nil {
+		if x, ok := x.Kind.(*WorkflowServiceTarget_Schedule); ok {
+			return x.Schedule
+		}
+	}
+	return nil
+}
+
+func (x *WorkflowServiceTarget) GetTaskQueue() string {
+	if x != nil {
+		if x, ok := x.Kind.(*WorkflowServiceTarget_TaskQueue); ok {
+			return x.TaskQueue
+		}
+	}
+	return ""
+}
+
+func (x *WorkflowServiceTarget) GetVisibilityQuery() string {
+	if x != nil {
+		if x, ok := x.Kind.(*WorkflowServiceTarget_VisibilityQuery); ok {
+			return x.VisibilityQuery
+		}
+	}
+	return ""
+}
+
+type isWorkflowServiceTarget_Kind interface {
+	isWorkflowServiceTarget_Kind()
+}
+
+type WorkflowServiceTarget_Workflows struct {
+	Workflows *WorkflowOperations `protobuf:"bytes,1,opt,name=workflows,proto3,oneof"`
+}
+
+type WorkflowServiceTarget_Schedule struct {
+	Schedule *ScheduleOperation `protobuf:"bytes,2,opt,name=schedule,proto3,oneof"`
+}
+
+type WorkflowServiceTarget_TaskQueue struct {
+	// The task queue the request polls, describes or configures.
+	TaskQueue string `protobuf:"bytes,3,opt,name=task_queue,json=taskQueue,proto3,oneof"`
+}
+
+type WorkflowServiceTarget_VisibilityQuery struct {
+	// Set for a batch that selects its workflows by a query.
+	VisibilityQuery string `protobuf:"bytes,4,opt,name=visibility_query,json=visibilityQuery,proto3,oneof"`
+}
+
+func (*WorkflowServiceTarget_Workflows) isWorkflowServiceTarget_Kind() {}
+
+func (*WorkflowServiceTarget_Schedule) isWorkflowServiceTarget_Kind() {}
+
+func (*WorkflowServiceTarget_TaskQueue) isWorkflowServiceTarget_Kind() {}
+
+func (*WorkflowServiceTarget_VisibilityQuery) isWorkflowServiceTarget_Kind() {}
+
+// A multi-operation has one operation per nested request. A batch over listed
+// workflows has one per workflow.
+type WorkflowOperations struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Operations    []*WorkflowOperation   `protobuf:"bytes,1,rep,name=operations,proto3" json:"operations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WorkflowOperations) Reset() {
+	*x = WorkflowOperations{}
+	mi := &file_api_auth_v1_target_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkflowOperations) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkflowOperations) ProtoMessage() {}
+
+func (x *WorkflowOperations) ProtoReflect() protoreflect.Message {
+	mi := &file_api_auth_v1_target_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkflowOperations.ProtoReflect.Descriptor instead.
+func (*WorkflowOperations) Descriptor() ([]byte, []int) {
+	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *WorkflowOperations) GetOperations() []*WorkflowOperation {
+	if x != nil {
+		return x.Operations
+	}
+	return nil
+}
+
+type WorkflowOperation struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	WorkflowId string                 `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	// Set when the operation can start the workflow. Such an operation can also
+	// signal, terminate or attach to a workflow that already runs under the ID.
+	Start         *WorkflowStart `protobuf:"bytes,2,opt,name=start,proto3" json:"start,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WorkflowOperation) Reset() {
+	*x = WorkflowOperation{}
+	mi := &file_api_auth_v1_target_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkflowOperation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkflowOperation) ProtoMessage() {}
+
+func (x *WorkflowOperation) ProtoReflect() protoreflect.Message {
+	mi := &file_api_auth_v1_target_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkflowOperation.ProtoReflect.Descriptor instead.
+func (*WorkflowOperation) Descriptor() ([]byte, []int) {
+	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *WorkflowOperation) GetWorkflowId() string {
+	if x != nil {
+		return x.WorkflowId
+	}
+	return ""
+}
+
+func (x *WorkflowOperation) GetStart() *WorkflowStart {
+	if x != nil {
+		return x.Start
+	}
+	return nil
+}
+
+type WorkflowStart struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorkflowType  string                 `protobuf:"bytes,1,opt,name=workflow_type,json=workflowType,proto3" json:"workflow_type,omitempty"`
+	TaskQueue     string                 `protobuf:"bytes,2,opt,name=task_queue,json=taskQueue,proto3" json:"task_queue,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WorkflowStart) Reset() {
+	*x = WorkflowStart{}
+	mi := &file_api_auth_v1_target_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkflowStart) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkflowStart) ProtoMessage() {}
+
+func (x *WorkflowStart) ProtoReflect() protoreflect.Message {
+	mi := &file_api_auth_v1_target_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkflowStart.ProtoReflect.Descriptor instead.
+func (*WorkflowStart) Descriptor() ([]byte, []int) {
+	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *WorkflowStart) GetWorkflowType() string {
+	if x != nil {
+		return x.WorkflowType
+	}
+	return ""
+}
+
+func (x *WorkflowStart) GetTaskQueue() string {
+	if x != nil {
+		return x.TaskQueue
+	}
+	return ""
+}
+
+type ScheduleOperation struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	ScheduleId string                 `protobuf:"bytes,1,opt,name=schedule_id,json=scheduleId,proto3" json:"schedule_id,omitempty"`
+	// The operation the schedule does each time it fires. Set when the request
+	// creates or updates the schedule.
+	Action        *WorkflowOperation `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScheduleOperation) Reset() {
+	*x = ScheduleOperation{}
+	mi := &file_api_auth_v1_target_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScheduleOperation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScheduleOperation) ProtoMessage() {}
+
+func (x *ScheduleOperation) ProtoReflect() protoreflect.Message {
+	mi := &file_api_auth_v1_target_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScheduleOperation.ProtoReflect.Descriptor instead.
+func (*ScheduleOperation) Descriptor() ([]byte, []int) {
+	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ScheduleOperation) GetScheduleId() string {
+	if x != nil {
+		return x.ScheduleId
+	}
+	return ""
+}
+
+func (x *ScheduleOperation) GetAction() *WorkflowOperation {
+	if x != nil {
+		return x.Action
+	}
+	return nil
+}
+
 // HTTPTarget is an HTTP request to one of the proxy's route groups, as the proxy
 // matched it. Its fields describe the request the proxy routed, not a claim the
 // caller made about it.
@@ -175,7 +506,7 @@ type HTTPTarget struct {
 
 func (x *HTTPTarget) Reset() {
 	*x = HTTPTarget{}
-	mi := &file_api_auth_v1_target_proto_msgTypes[1]
+	mi := &file_api_auth_v1_target_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -187,7 +518,7 @@ func (x *HTTPTarget) String() string {
 func (*HTTPTarget) ProtoMessage() {}
 
 func (x *HTTPTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_api_auth_v1_target_proto_msgTypes[1]
+	mi := &file_api_auth_v1_target_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -200,7 +531,7 @@ func (x *HTTPTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HTTPTarget.ProtoReflect.Descriptor instead.
 func (*HTTPTarget) Descriptor() ([]byte, []int) {
-	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{1}
+	return file_api_auth_v1_target_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *HTTPTarget) GetGroup() HTTPTarget_Group {
@@ -228,11 +559,35 @@ var File_api_auth_v1_target_proto protoreflect.FileDescriptor
 
 const file_api_auth_v1_target_proto_rawDesc = "" +
 	"\n" +
-	"\x18api/auth/v1/target.proto\x12\vapi.auth.v1\"p\n" +
+	"\x18api/auth/v1/target.proto\x12\vapi.auth.v1\"\xbf\x01\n" +
 	"\x06Target\x12\x1b\n" +
 	"\tfull_name\x18\x01 \x01(\tR\bfullName\x12\x1c\n" +
 	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12+\n" +
-	"\x04http\x18\x03 \x01(\v2\x17.api.auth.v1.HTTPTargetR\x04http\"\xb6\x01\n" +
+	"\x04http\x18\x03 \x01(\v2\x17.api.auth.v1.HTTPTargetR\x04http\x12M\n" +
+	"\x10workflow_service\x18\x04 \x01(\v2\".api.auth.v1.WorkflowServiceTargetR\x0fworkflowService\"\xec\x01\n" +
+	"\x15WorkflowServiceTarget\x12?\n" +
+	"\tworkflows\x18\x01 \x01(\v2\x1f.api.auth.v1.WorkflowOperationsH\x00R\tworkflows\x12<\n" +
+	"\bschedule\x18\x02 \x01(\v2\x1e.api.auth.v1.ScheduleOperationH\x00R\bschedule\x12\x1f\n" +
+	"\n" +
+	"task_queue\x18\x03 \x01(\tH\x00R\ttaskQueue\x12+\n" +
+	"\x10visibility_query\x18\x04 \x01(\tH\x00R\x0fvisibilityQueryB\x06\n" +
+	"\x04kind\"T\n" +
+	"\x12WorkflowOperations\x12>\n" +
+	"\n" +
+	"operations\x18\x01 \x03(\v2\x1e.api.auth.v1.WorkflowOperationR\n" +
+	"operations\"f\n" +
+	"\x11WorkflowOperation\x12\x1f\n" +
+	"\vworkflow_id\x18\x01 \x01(\tR\n" +
+	"workflowId\x120\n" +
+	"\x05start\x18\x02 \x01(\v2\x1a.api.auth.v1.WorkflowStartR\x05start\"S\n" +
+	"\rWorkflowStart\x12#\n" +
+	"\rworkflow_type\x18\x01 \x01(\tR\fworkflowType\x12\x1d\n" +
+	"\n" +
+	"task_queue\x18\x02 \x01(\tR\ttaskQueue\"l\n" +
+	"\x11ScheduleOperation\x12\x1f\n" +
+	"\vschedule_id\x18\x01 \x01(\tR\n" +
+	"scheduleId\x126\n" +
+	"\x06action\x18\x02 \x01(\v2\x1e.api.auth.v1.WorkflowOperationR\x06action\"\xb6\x01\n" +
 	"\n" +
 	"HTTPTarget\x123\n" +
 	"\x05group\x18\x01 \x01(\x0e2\x1d.api.auth.v1.HTTPTarget.GroupR\x05group\x12\x16\n" +
@@ -257,20 +612,31 @@ func file_api_auth_v1_target_proto_rawDescGZIP() []byte {
 }
 
 var file_api_auth_v1_target_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_auth_v1_target_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_api_auth_v1_target_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_api_auth_v1_target_proto_goTypes = []any{
-	(HTTPTarget_Group)(0), // 0: api.auth.v1.HTTPTarget.Group
-	(*Target)(nil),        // 1: api.auth.v1.Target
-	(*HTTPTarget)(nil),    // 2: api.auth.v1.HTTPTarget
+	(HTTPTarget_Group)(0),         // 0: api.auth.v1.HTTPTarget.Group
+	(*Target)(nil),                // 1: api.auth.v1.Target
+	(*WorkflowServiceTarget)(nil), // 2: api.auth.v1.WorkflowServiceTarget
+	(*WorkflowOperations)(nil),    // 3: api.auth.v1.WorkflowOperations
+	(*WorkflowOperation)(nil),     // 4: api.auth.v1.WorkflowOperation
+	(*WorkflowStart)(nil),         // 5: api.auth.v1.WorkflowStart
+	(*ScheduleOperation)(nil),     // 6: api.auth.v1.ScheduleOperation
+	(*HTTPTarget)(nil),            // 7: api.auth.v1.HTTPTarget
 }
 var file_api_auth_v1_target_proto_depIdxs = []int32{
-	2, // 0: api.auth.v1.Target.http:type_name -> api.auth.v1.HTTPTarget
-	0, // 1: api.auth.v1.HTTPTarget.group:type_name -> api.auth.v1.HTTPTarget.Group
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	7, // 0: api.auth.v1.Target.http:type_name -> api.auth.v1.HTTPTarget
+	2, // 1: api.auth.v1.Target.workflow_service:type_name -> api.auth.v1.WorkflowServiceTarget
+	3, // 2: api.auth.v1.WorkflowServiceTarget.workflows:type_name -> api.auth.v1.WorkflowOperations
+	6, // 3: api.auth.v1.WorkflowServiceTarget.schedule:type_name -> api.auth.v1.ScheduleOperation
+	4, // 4: api.auth.v1.WorkflowOperations.operations:type_name -> api.auth.v1.WorkflowOperation
+	5, // 5: api.auth.v1.WorkflowOperation.start:type_name -> api.auth.v1.WorkflowStart
+	4, // 6: api.auth.v1.ScheduleOperation.action:type_name -> api.auth.v1.WorkflowOperation
+	0, // 7: api.auth.v1.HTTPTarget.group:type_name -> api.auth.v1.HTTPTarget.Group
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_api_auth_v1_target_proto_init() }
@@ -278,13 +644,19 @@ func file_api_auth_v1_target_proto_init() {
 	if File_api_auth_v1_target_proto != nil {
 		return
 	}
+	file_api_auth_v1_target_proto_msgTypes[1].OneofWrappers = []any{
+		(*WorkflowServiceTarget_Workflows)(nil),
+		(*WorkflowServiceTarget_Schedule)(nil),
+		(*WorkflowServiceTarget_TaskQueue)(nil),
+		(*WorkflowServiceTarget_VisibilityQuery)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_auth_v1_target_proto_rawDesc), len(file_api_auth_v1_target_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

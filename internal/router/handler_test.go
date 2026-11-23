@@ -620,7 +620,9 @@ func (s stubDirector) Resolve(context.Context, string, string, map[string][]stri
 	return router.Target{Upstream: s.upstream, Handle: router.ForwardTo(s.cc)}, nil
 }
 
-func (stubReflector) Namespace(string, []byte) string { return "" }
+func (stubReflector) Target(method string, _ []byte) meta.Target {
+	return meta.Target{FullName: method}
+}
 
 func (stubAllowlist) Allows(string) bool { return true }
 
@@ -628,13 +630,13 @@ func (stubAllowlist) Allows(string) bool { return true }
 // a set, and the handler never enumerates.
 func (stubAllowlist) ServiceNames() []string { return nil }
 
-func (r *recordingReflector) Namespace(method string, payload []byte) string {
+func (r *recordingReflector) Target(method string, payload []byte) meta.Target {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++
 	r.method = method
 	r.payload = bytes.Clone(payload)
-	return r.ns
+	return meta.Target{FullName: method, Namespace: r.ns}
 }
 
 func (r *recordingReflector) snapshot() (calls int, method string, payload []byte) {

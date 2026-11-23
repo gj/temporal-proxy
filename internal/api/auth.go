@@ -128,7 +128,7 @@ func clientMessageFor(code codes.Code) string {
 // protoTarget converts the gateway's view of a request into the wire Target an
 // extension server decides on.
 func protoTarget(t meta.Target) *auth.Target {
-	pt := &auth.Target{FullName: t.FullName, Namespace: t.Namespace}
+	pt := &auth.Target{FullName: t.FullName, Namespace: t.Namespace, WorkflowService: t.WorkflowService}
 	if t.HTTP != nil {
 		pt.Http = &auth.HTTPTarget{
 			Group:  protoHTTPGroup(t.HTTP.Group),
